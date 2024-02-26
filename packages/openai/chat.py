@@ -83,6 +83,11 @@ def check_if_is_mail(_str):
         _finded = True
     return _finded
 
+def get_emails(_str):
+    emails = re.findall(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", _str)
+    if len(emails) < 1: return None
+    return emails
+
 def extract_domains(_str):
     _pattern = r"(?<!\w)([a-z0-9-]{5,}\.[a-z]{2,6})(?!\w)"
     matches = re.finditer(_pattern, _str)
@@ -122,11 +127,23 @@ def main(args):
             "message": "You can chat with OpenAI. (TEST)"
         }
     else:
-        # user has put just an email, no need for ai
-        if check_if_is_mail(input):
+        # user has put just an email, no need for ai (diabled)
+        if False and check_if_is_mail(input):
+            res = {'title': '', 'message': ''}
             res['output'] = 'sended to slack'
             return {"body": res }
-        
+        # check for multiple email, extract it from text, maybe is better?
+        _emails = get_emails(input)
+        if _emails is not None:
+            for _email in _emails:
+                slack_log(f'Hello from {_email}!')
+            res = {
+                "output": "",
+                "title": "OpenAI Chat",
+                "message": "You can chat with OpenAI. (TEST)"
+            }
+            res['output'] = output + " emails sended to slack" 
+            return {"body": res }
         # check for domain
         _domains = extract_domains(input)
         if _domains is not None:
