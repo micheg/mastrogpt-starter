@@ -105,7 +105,9 @@ def get_chess_puzzle():
     endpoint = 'https://pychess.run.goorm.io/api/puzzle?limit=1'
     r = requests.get(endpoint)
     if r.status_code == 200:
+        # do parsing here.
         pass
+    return {}
 
 def main(args):
     global AI
@@ -140,16 +142,16 @@ def main(args):
             res['output'] = output
             return {"body": res }
         
-        # check for chess    
-        if (find_word('chess')(input) is not None or find_word('scacchi')(input) is not None):
-            tmp = f'is the following a request for a chess puzzle: "{input}": Answer Yes or No'
-            output = ask(tmp)
-            if output.lower() == 'yes':
-                _puzzle_data = get_chess_puzzle()                
-            res = extract(output)
-            res['output'] = output
-            return {"body": res }
-        
+        # check for chess
+        if(False): # chess container is down
+            if (find_word('chess')(input) is not None or find_word('scacchi')(input) is not None):
+                tmp = f'is the following a request for a chess puzzle: "{input}": Answer Yes or No'
+                output = ask(tmp)
+                if output.lower() == 'yes':
+                    _puzzle_data = get_chess_puzzle()                
+                res = extract(output)
+                res['output'] = output
+                return {"body": res }
         output = ask(input)
         res = extract(output)
         res['output'] = output
