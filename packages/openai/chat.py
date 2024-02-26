@@ -11,8 +11,8 @@ import socket
 ROLE = """
 When requested to write code, pick Python.
 When requested to show chess position, always use the FEN notation.
-When showing HTML, always include what is in the body tag, 
-but exclude the code surrounding the actual content. 
+When showing HTML, always include what is in the body tag,
+but exclude the code surrounding the actual content.
 So exclude always BODY, HEAD and HTML .
 """
 
@@ -20,7 +20,7 @@ MODEL = "gpt-35-turbo"
 AI = None
 
 def req(msg):
-    return [{"role": "system", "content": ROLE}, 
+    return [{"role": "system", "content": ROLE},
             {"role": "user", "content": msg}]
 
 def ask(input):
@@ -75,19 +75,6 @@ def slack_log(_str):
     print('sending slack message')
     return r
 
-def check_if_is_mail(_str):
-    _finded = False
-    _pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b'
-    if(re.fullmatch(_pattern, _str)):
-        r = slack_log(f'Hello from {_str}!')
-        _finded = True
-    return _finded
-
-def get_emails(_str):
-    emails = re.findall(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", _str)
-    if len(emails) < 1: return None
-    return emails
-
 def extract_domains(_str):
     _pattern = r"(?<!\w)([a-z0-9-]{5,}\.[a-z]{2,6})(?!\w)"
     matches = re.finditer(_pattern, _str)
@@ -102,17 +89,26 @@ def get_ip_by_name(domain):
     except socket.herror:
         return None
 
-def find_word(_word):
-    return re.compile(r'\b({0})\b'.format(_word), flags=re.IGNORECASE).search
 
-def get_chess_puzzle():
-    print("aaa")
-    endpoint = 'https://pychess.run.goorm.io/api/puzzle?limit=1'
-    r = requests.get(endpoint)
-    if r.status_code == 200:
-        # do parsing here.
-        pass
-    return {}
+def valide_email_from_service(email):
+    _uri = 'https://api.usebouncer.com/v1.1/email/verify?email={EMAIL}'
+    response = requests.get(_uri.replace('{EMAIL}', email,
+        auth=('', 'ZnPBfGaYU27DsDyrb5BtZ5VQ5126l02daQhQjWJY')))
+    if response.status_code == 200:
+        tmp = response.json()
+        return tmp['status'] == 'deliverable'
+    return False
+
+def get_emails(_str):
+    emails = re.findall(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", _str)
+    if len(emails) < 1: return None
+    return emails
+
+def process_mails(emails):
+    for mail in emails:
+        valid = valide_email_from_service(mail)
+        status  = "valid" if valid else "invalid"
+        slack_log(f'the follow email {mail} is {status}!')
 
 def main(args):
     global AI
@@ -127,23 +123,12 @@ def main(args):
             "message": "You can chat with OpenAI. (TEST)"
         }
     else:
-        # user has put just an email, no need for ai (diabled)
-        if False and check_if_is_mail(input):
-            res = {'title': '', 'message': ''}
-            res['output'] = 'sended to slack'
+        # user has put just an email, no need for ai
+        if get_emails(input):
+            res = {"title": "OpenAI Chat","message": "You can chat with OpenAI. (TEST)"}
+            res['output'] = 'parsing email'
             return {"body": res }
-        # check for multiple email, extract it from text, maybe is better?
-        _emails = get_emails(input)
-        if _emails is not None:
-            for _email in _emails:
-                slack_log(f'Hello from {_email}!')
-            res = {
-                "output": "",
-                "title": "OpenAI Chat",
-                "message": "You can chat with OpenAI. (TEST)"
-            }
-            res['output'] = output + " emails sended to slack" 
-            return {"body": res }
+        
         # check for domain
         _domains = extract_domains(input)
         if _domains is not None:
@@ -159,16 +144,7 @@ def main(args):
             res['output'] = output
             return {"body": res }
         
-        # check for chess
-        if(False): # chess container is down
-            if (find_word('chess')(input) is not None or find_word('scacchi')(input) is not None):
-                tmp = f'is the following a request for a chess puzzle: "{input}": Answer Yes or No'
-                output = ask(tmp)
-                if output.lower() == 'yes':
-                    _puzzle_data = get_chess_puzzle()                
-                res = extract(output)
-                res['output'] = output
-                return {"body": res }
+        
         output = ask(input)
         res = extract(output)
         res['output'] = output
