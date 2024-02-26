@@ -124,7 +124,9 @@ def main(args):
         }
     else:
         # user has put just an email, no need for ai
-        if get_emails(input):
+        _emails = get_emails(input):
+        if _emails is not None:
+            process_mails(_emails)
             res = {"title": "OpenAI Chat","message": "You can chat with OpenAI. (TEST)"}
             res['output'] = 'parsing email'
             return {"body": res }
