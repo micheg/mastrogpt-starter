@@ -92,8 +92,8 @@ def get_ip_by_name(domain):
 
 def valide_email_from_service(email):
     _uri = 'https://api.usebouncer.com/v1.1/email/verify?email={EMAIL}'
-    response = requests.get(_uri.replace('{EMAIL}', email,
-        auth=('', 'ZnPBfGaYU27DsDyrb5BtZ5VQ5126l02daQhQjWJY')))
+    response = requests.get(_uri.replace('{EMAIL}', email),
+        auth=('', 'ZnPBfGaYU27DsDyrb5BtZ5VQ5126l02daQhQjWJY'))
     if response.status_code == 200:
         tmp = response.json()
         return tmp['status'] == 'deliverable'
